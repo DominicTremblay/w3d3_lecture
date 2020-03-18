@@ -1,82 +1,56 @@
-# W3D2 - Lecture - CRUD with Express
+# W2D4 - User Authentication with Express
 
-## How do you comfort a JavaScript bug?
+## http is stateless
 
-- You console it!
+### What do we mean by statelessness?
 
-## What is Express?
+- The server doesn't remember you
+- The server process every request like a new request
 
-- Express is a Web framework for NodeJS
-  - Routing
-  - Layer on top of node HTTP server
-  - Middleware
-  - Template Engine(ejs)
+### what is a session
 
-## Web App Request/Response Recap
+- Application session is server-side data which servers store to identify incoming client requests, their previous interaction details, and current context information.
 
-We draw this diagram to explain how requests and responses work.
+### Benefits of http Statelessness
 
-- [Web App Overview](./web_app_overview.png)
+- Scalability - no session related dependency
+- Less complex - less synchroniztion
+- Easier to chache
+- The server cannot lose track of information
 
-## Resources
+### Disadvantages
 
-Resources for our movie quotes App
+- cannot easily keep track context
+- context has to provided each time
+- Good transactions. not good for conversations.
 
-- quotes
-- comments
+## Using cookies to remember the user
 
-## CRUD Operation
+### How cookies work
 
-For each resource, we want to:
+We did this diagram to explain how cookies work:
 
-- create => creating a new resource
-- read => getting a resource
-- update => changing a resource
-- delete => deleting a resource
+- [Cookies Diagram](https://drive.google.com/file/d/1_9FET5lWOAXk1s5gaSkAO6qjSw0n9aQw/view?usp=sharing)
 
-### http methods
+- a cookie is a small text file that is stored by a browser on the user’s machine
 
-What language does a client use to makes request to the server ? http
+- a collection of key-value pairs that store information
+  - shopping-cart, game scores, ads, and logins
 
-http protocol gives us verbs
+`name=Linguini; style=classy;`
 
-- Create => Create a new ressource => Post
-- Read => Get a resource => Get
-- Update => Change a resource => Put
-- Delete => Delete a resource => Delete
+- The response header will set the cookie
 
-### Scoping information
+  Set-Cookie: <em>value</em>[; expires=<em>date</em>][; domain=<em>domain</em>][; path=<em>path</em>][; secure]
 
-- collections vs single entity
-- which one?
+- The browser will store the cookie
+- The browser will send the cookie in the request headers of subsequent requests
+- can be set for a specific domain
+- can have an expiration date, if not session cookie
 
-### End Points
+### Using cookie-parser
 
-We design design the following end points for our quotes app:
-
-| Action                                | http verb | end point                |
-| ------------------------------------- | --------- | ------------------------ |
-| List all quotes                       | GET       | get '/quotes'            |
-| Get a specific quote                  | GET       | get '/quotes/:id'        |
-| Display the new form                  | GET       | get '/quotes/new         |
-| Create a new quote                    | POST      | post '/quotes            |
-| Display the form for updating a quote | GET       | get '/quotes/:id/update' |
-| Update the quotes                     | PUT       | put '/quotes/:id         |
-| Deleting a specific quote             | DELETE    | delete '/quotes:id'      |
-
-#### Nested Resources
-
-You may need to access a nested resources. For example, you need to create a new comment.
-
-| Action               | http verb | end point                  |
-| -------------------- | --------- | -------------------------- |
-| Create a new comment | POST      | post '/quotes/:id/comments |
-
-## Demo
-
-We created a movie quotes app demonstrating the use of Express with RESTful routes.
-
-### To run the app
-
-- npm install
-- node server.js
+- We're going to store the user id in the cookies
+- We need to install a middleware in Express to process the cookie: cookie-parser
+  - setting the cookie: res.cookie('cookieName','cookieValue')
+  - reading the cookie: req.cookies.cookieName
