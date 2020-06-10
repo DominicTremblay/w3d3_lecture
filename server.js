@@ -3,16 +3,16 @@ const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const uuid = require('uuid/v4');
 const cookieParser = require('cookie-parser');
-
-const PORT = process.env.PORT || 3005;
+const PORT = process.env.PORT || 3001;
 
 // creating an Express app
 const app = express();
 
-app.use(cookieParser());
-
 // morgan middleware allows to log the request in the terminal
 app.use(morgan('short'));
+
+// enabling cookies
+app.use(cookieParser());
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -55,7 +55,8 @@ const quoteComments = {
   },
 };
 
-const usersDb = {
+// Users database
+const users = {
   eb849b1f: {
     id: 'eb849b1f',
     name: 'Kent Cook',
@@ -70,7 +71,7 @@ const usersDb = {
   },
 };
 
-const createNewQuote = content => {
+const createNewQuote = (content) => {
   const quoteId = uuid().substr(0, 8);
 
   // {
@@ -104,134 +105,151 @@ const updateQuote = (quoteId, content) => {
 };
 
 const addNewUser = (name, email, password) => {
-  // Generate a random id
-  const userId = uuid().substr(0, 8);
+  // Create a user id ... generate a unique id
+  const userId = Math.random().toString(36).substring(2, 8);
 
   // Create a new user object
-  //  {
-  //    id: 'eb849b1f',
-  //      name: 'Kent Cook',
-  //        email: 'really.kent.cook@kitchen.com',
-  //          password: 'cookinglessons',
-  //  }
 
-  const newUserObj = {
+  const newUser = {
     id: userId,
     name,
     email,
     password,
   };
 
-  // Add the user Object into the usersDb
+  // Add the user to the database
 
-  usersDb[userId] = newUserObj;
+  // Read the value associated with the key
+  // nameOfTheobject[key]
 
-  // return the id of the user
+  // how you add a value to an object
+  // nameOfTheobject[key] = value
+
+  users[userId] = newUser;
 
   return userId;
 };
 
-const findUserByEmail = email => {
-  // const user = Object.values(usersDb).find(userObj => userObj.email === email)
-  //  return user;
+const findUserByEmail = (email) => {
 
-  // loop through the usersDb object
-  for (let userId in usersDb) {
-    // compare the emails, if they match return the user obj
-    if (usersDb[userId].email === email) {
-      return usersDb[userId];
+  // using the built-in function here => find
+  // return Object.values(users).find(userObj => userObj.email === email);
+
+  // iterate through the users object
+
+  // looping through the keys with a for in
+  for (let userId in users) {
+    // try the match the email of each
+    if (users[userId].email === email) {
+      // if it matches return truthy
+      return users[userId];
     }
   }
 
-  // after the loop, return false
+  // if it never returned true, then return false by default
   return false;
 };
 
 const authenticateUser = (email, password) => {
-  // retrieve the user with that email
+
+  // loop through the users db => object
   const user = findUserByEmail(email);
-
-  // if we got a user back and the passwords match then return the userObj
+  // check that values of email and password if they match
   if (user && user.password === password) {
-    // user is authenticated
-    return user;
-  } else {
-    // Otherwise return false
-    return false;
+    // return user id if it matches
+    return user.id;
   }
-};
 
-// Authentication
+  // default return false
+  return false;
+
+}
+
+// User Authentication
 
 // Display the register form
 app.get('/register', (req, res) => {
-  const templateVars = { currentUser: null };
+  const templateVars = { user: null };
   res.render('register', templateVars);
 });
 
-// Get the info from the register form
+// Handling the register form submit
 app.post('/register', (req, res) => {
-  // extract the info from the form
+  // Extract the email and password from the form
+  // req.body (body-parser) => get the info from our form
+
   const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
+  // es6 syntax
+  // const {name, email, password} = req.body;
 
-  // check if the user is not already in the database
-
+  // validation: check that the user is not already in the database
   const user = findUserByEmail(email);
 
-  // if not in the db, it'ok to add the user to the db
+  // if user is undefined, we can add the user in the db
 
   if (!user) {
     const userId = addNewUser(name, email, password);
-    // setCookie with the user id
+
+    // Setting the cookie in the user's browser
     res.cookie('user_id', userId);
 
-    // redirect to /quotes
+    // redirect to '/quotes/
+
     res.redirect('/quotes');
   } else {
-    res.status(403).send('Sorry, the user is already registered');
+    res.status(403).send('User is already registered!');
   }
+});
+
+app.get('/users', (req, res) => {
+  res.json(users);
 });
 
 // Display the login form
+
 app.get('/login', (req, res) => {
-  const templateVars = { currentUser: null };
+  const templateVars = { user: null };
   res.render('login', templateVars);
 });
 
-// this end point is for checking the content of usersDb
-// remove when cleaning up the code
-app.get('/users', (req, res) => {
-  res.json(usersDb);
-});
-
-// Authenticate the user
+// authenticate the user
 app.post('/login', (req, res) => {
-  // extract the info from the form
+
+  // extract the information from the form with req.body
+  // email + password
   const email = req.body.email;
   const password = req.body.password;
 
-  // Authenticate the user
-  const user = authenticateUser(email, password);
+  // user must exist, check for the password
 
-  // if authenticated, set cookie with its user id and redirect
-  if (user) {
-    res.cookie('user_id', user.id);
-    res.redirect('/quotes');
+  // either userId has a value or it is falsy
+  const userId = authenticateUser(email, password);
+
+  if (userId) {
+    // Set the cookie with the user id 
+    res.cookie('user_id', userId);
+  // redirect to /quotes
+    res.redirect('/quotes')
   } else {
-    // otherwise we send an error message
-    res.status(401).send('Wrong credentials!');
+    // user is not authenticated => error message
+    res.status(401).send('Wrong credentials');
   }
+
+  
+
 });
 
 app.post('/logout', (req, res) => {
-  // clear the cookies
-  res.cookie('user_id', null);
 
-  // redirect to /quotes
+  // clear the cookie
+  res.clearCookie('user_id');
+  // res.cookie("user_id", null);
+
   res.redirect('/quotes');
-});
+})
+
 
 // CRUD operations
 
@@ -242,14 +260,22 @@ app.post('/logout', (req, res) => {
 app.get('/quotes', (req, res) => {
   const quoteList = Object.values(movieQuotesDb);
 
-  // get the current user
-  // read the user id value from the cookies
+  // read the user id from the cookies
 
   const userId = req.cookies['user_id'];
+  // userId = '2t6cfm'
 
-  const loggedInUser = usersDb[userId];
+  // retrieve the user object from users db
+  const currentUser = users[userId];
 
-  const templateVars = { quotesArr: quoteList, currentUser: loggedInUser };
+  // currentUser = {
+  // "id": "2t6cfm",
+  // "name": "Sherry Cola",
+  // "email": "sherry.cola@forever.com",
+  // "password": "test"
+  // }
+
+  const templateVars = { quotesArr: quoteList, user: currentUser };
 
   res.render('quotes', templateVars);
 
@@ -297,16 +323,13 @@ app.post('/quotes', (req, res) => {
 // GET /quotes/:id
 app.get('/quotes/:id', (req, res) => {
   const quoteId = req.params.id;
-  // get the current user
-  // read the user id value from the cookies
 
+  // read the user id from the cookies
   const userId = req.cookies['user_id'];
 
-  const loggedInUser = usersDb[userId];
-  const templateVars = {
-    quoteObj: movieQuotesDb[quoteId],
-    currentUser: loggedInUser,
-  };
+  // retrieve the user object from users db
+  const currentUser = users[userId];
+  const templateVars = { quoteObj: movieQuotesDb[quoteId], user: currentUser };
 
   // render the show page
   res.render('quote_show', templateVars);
