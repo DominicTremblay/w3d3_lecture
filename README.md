@@ -1,4 +1,4 @@
-# W2D4 - User Authentication with Express
+# W3D3 - User Authentication with Express
 
 ## http is stateless
 
@@ -30,7 +30,8 @@
 
 We did this diagram to explain how cookies work:
 
-- [Cookies Diagram](https://drive.google.com/file/d/1_9FET5lWOAXk1s5gaSkAO6qjSw0n9aQw/view?usp=sharing)
+- [Logging In](./user_auth.png)
+- [Logged In](./user_auth_logged.png)
 
 - a cookie is a small text file that is stored by a browser on the user’s machine
 
