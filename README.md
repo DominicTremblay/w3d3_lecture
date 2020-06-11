@@ -1,4 +1,4 @@
-# W3D3 - User Authentication with Express
+# W2D3 - User Authentication with Express
 
 ## http is stateless
 
