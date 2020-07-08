@@ -1,12 +1,14 @@
 const express = require('express');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
 const uuid = require('uuid/v4');
 
 const PORT = process.env.PORT || 3001;
 
 // creating an Express app
 const app = express();
+app.use(cookieParser());
 
 // morgan middleware allows to log the request in the terminal
 app.use(morgan('short'));
@@ -67,7 +69,62 @@ const users = {
   },
 };
 
-const createNewQuote = content => {
+const findUserByEmail = (email) => {
+  // good.philamignon@steak.com'
+  // loop through the users in the db
+  for (let userId in users) {
+    // if email match the email from the user from the db, return the user
+    if (users[userId].email === email) {
+      // return the full user object
+      return users[userId];
+    }
+  }
+
+  // return false;
+  return false;
+};
+
+const addNewUser = (name, email, password) => {
+  // const users = {
+  //   eb849b1f: {
+  //     id: 'eb849b1f',
+  //     name: 'Kent Cook',
+  //     email: 'really.kent.cook@kitchen.com',
+  //     password: 'cookinglessons',
+  //   }
+  // }
+
+  // generate an id
+  const userId = Math.random().toString(36).substring(2, 8);
+  // create a new user object => value associated with the id
+  const newUser = {
+    id: userId,
+    name: name,
+    email: email,
+    password: password,
+  };
+  // add new user object to the users db
+  users[userId] = newUser;
+
+  // return userId
+  return userId;
+};
+
+const authenticateUser = (email, password) => {
+  // Does the user with that email exist?
+  const user = findUserByEmail(email);
+
+  // check the email and passord match
+  if (user && user.password === password) {
+    return user.id;
+  } else {
+    return false;
+  }
+};
+
+
+
+const createNewQuote = (content) => {
   const quoteId = uuid().substr(0, 8);
 
   // creating the new quote object
@@ -84,12 +141,80 @@ const createNewQuote = content => {
 };
 
 const updateQuote = (quoteId, content) => {
-
   // updating the quote key in the quote object
   movieQuotesDb[quoteId].quote = content;
 
   return true;
 };
+
+// User Authentication Routes
+
+// Display the register form to the user
+app.get('/register', (req, res) => {
+  const templateVars = {user: null};
+  res.render('register', templateVars);
+});
+
+// Catch the submit of the register form
+app.post('/register', (req, res) => {
+  // Extract the user info from the form
+  const name = req.body.name;
+  const email = req.body.email;
+  const password = req.body.password;
+
+  // ES6 syntax
+  // const {name, email, password} = req.body;
+
+  // Check if the user already exists in the users db
+  // if the user is retrived, we got the user object
+  // if not we got falsy
+  const user = findUserByEmail(email);
+
+  if (!user) {
+    // Add the user in the users db
+    const userId = addNewUser(name, email, password);
+    // set the user id in the cookie
+    res.cookie('user_id', userId);
+    // redirect to GET /quote
+    res.redirect('/quotes');
+  } else {
+    res.status(401).send('Error: email already exists');
+  }
+});
+
+// display the login form
+app.get('/login', (req, res) => {
+  const templateVars = {user: null};
+
+  res.render('login', templateVars);
+});
+
+// Login the user
+app.post('/login', (req, res) => {
+
+  // Extract the user info from the request body
+  const email = req.body.email;
+  const password = req.body.password;
+
+
+  // Authentication the user
+  const userId = authenticateUser(email, password);
+
+  if (userId) {
+    // set the user id in the cookie
+    res.cookie('user_id', userId);
+    // res.redirect /quotes
+    res.redirect('/quotes');
+  } else {
+    res.status(401).send('Wrong credentials');
+  }
+
+
+});
+
+app.get('/users', (req, res) => {
+  res.json(users);
+});
 
 // CRUD operations
 
@@ -99,7 +224,11 @@ const updateQuote = (quoteId, content) => {
 
 app.get('/quotes', (req, res) => {
   const quoteList = Object.values(movieQuotesDb);
-  const templateVars = { quotesArr: quoteList };
+  const templateVars = {
+    quotesArr: quoteList,
+    // reading the userId in the cookie (key), retrieving the user in the users db with that key
+    user: users[req.cookies['user_id']]
+  };
 
   res.render('quotes', templateVars);
 
