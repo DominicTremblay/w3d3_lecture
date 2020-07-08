@@ -70,11 +70,6 @@ const users = {
 const createNewQuote = content => {
   const quoteId = uuid().substr(0, 8);
 
-  // {
-  //   id: 'd9424e04',
-  //   quote: 'Why so serious?',
-  // }
-
   // creating the new quote object
   const newQuote = {
     id: quoteId,
@@ -89,10 +84,6 @@ const createNewQuote = content => {
 };
 
 const updateQuote = (quoteId, content) => {
-  // d9424e04: {
-  //   id: 'd9424e04',
-  //   quote: 'Why so serious?',
-  // }
 
   // updating the quote key in the quote object
   movieQuotesDb[quoteId].quote = content;
