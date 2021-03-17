@@ -4,13 +4,19 @@
 
     <h1>Login</h1>
 
-    <form>
+    <% if (error) { %>
+
+      <h3><%= error %> </h3>
+      
+    <% } %> 
+
+    <form method="POST" action="/login">
       <div style="width: 20em;">
         <div class="form-group">
         <label for="email">Email:</label>
         <input
           style="width: 100%"
-          type="text"
+          type="email"
           name="email"
           id="email"
           placeholder="Please enter your email">
