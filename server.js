@@ -2,6 +2,7 @@ const express = require('express');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 const uuid = require('uuid/v4');
+const cookieParser = require('cookie-parser');
 
 const PORT = process.env.PORT || 3000;
 
@@ -13,6 +14,9 @@ app.use(morgan('short'));
 
 // parse application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: false }));
+
+// activate cookie parser
+app.use(cookieParser());
 
 // Static assets (images, css files) are being served from the public folder
 app.use(express.static('public'));
@@ -52,7 +56,7 @@ const quoteComments = {
   },
 };
 
-const users = {
+const usersDb = {
   eb849b1f: {
     id: 'eb849b1f',
     name: 'Kent Cook',
@@ -67,7 +71,31 @@ const users = {
   },
 };
 
-const createNewQuote = content => {
+// return the user obj containing all the info if email is found
+// otherwise return false
+const findUserByEmail = (email, usersDb) => {
+  // return Object.keys(usersDb).find(key => usersDb[key].email === email)
+
+  for (let userId in usersDb) {
+    if (usersDb[userId].email === email) {
+      return usersDb[userId]; // return the user object
+    }
+  }
+
+  return false;
+};
+
+const authenticateUser = (email, password, usersDb) => {
+  // contained the user info if found or false if not
+  const userFound = findUserByEmail(email, usersDb);
+
+  if (userFound && userFound.password === password) {
+    return userFound;
+  }
+  return false;
+};
+
+const createNewQuote = (content) => {
   const quoteId = uuid().substr(0, 8);
 
   // creating the new quote object
@@ -84,12 +112,109 @@ const createNewQuote = content => {
 };
 
 const updateQuote = (quoteId, content) => {
-
   // updating the quote key in the quote object
   movieQuotesDb[quoteId].quote = content;
 
   return true;
 };
+
+// User Authentication End Points
+
+// send back the list of user info
+// just for dev purpose
+
+app.get('/users', (req, res) => {
+  console.log(usersDb);
+  res.json(usersDb);
+});
+
+// Register
+
+// Display the register form
+app.get('/register', (req, res) => {
+  res.render('register');
+});
+
+// Handle the register form
+app.post('/register', (req, res) => {
+  // Extraction the user info from the form
+  // console.log("user info:", req.body);
+
+  const name = req.body.name;
+  const email = req.body.email;
+  const password = req.body.password;
+
+  // Object destructuring
+  // const { name, email, password } = req.body
+
+  // Validation: check if a user with that email already exists in the usersDb
+
+  const userFound = findUserByEmail(email, usersDb);
+
+  if (userFound) {
+    return res.send('that email exists!');
+  }
+
+  // for in and try to find an email that match the email from the form
+  // if found => error message
+  // if not, we're ok. Continue.
+
+  // {
+  //     id: 'eb849b1f',
+  //     name: 'Kent Cook',
+  //     email: 'really.kent.cook@kitchen.com',
+  //     password: 'cookinglessons',
+  //   }
+
+  // generate a new user id
+
+  const userId = uuid().substr(0, 8);
+
+  // create a new user object
+  const newUser = {
+    id: userId,
+    name,
+    email,
+    password,
+  };
+
+  // Adding user info to usersDb
+  usersDb[userId] = newUser;
+
+  // set the cookie => to remember the user (to log the user in)
+  // ask the browser to set a cookie
+  res.cookie('user_id', userId);
+
+  // redirect to /quotes
+  res.redirect('/quotes');
+});
+
+// Login
+
+// Display the login form
+app.get('/login', (req, res) => {
+  res.render('login');
+});
+
+// handle the login form
+app.post('/login', (req, res) => {
+  // Extract the user info from the login form => req.body
+  const { email, password } = req.body;
+
+  // retrieve the user info with that email (it must be an existing user)
+  // const userFound = findUserByEmail(email, usersDb);
+
+  // get the user object (authenticated) or false if not
+  const user = authenticateUser(email, password, usersDb);
+
+  if (user) {
+    // log the user in
+    res.cookie('user_id', user.id);
+    res.redirect('/quotes');
+  } else {
+    res.send('Sorry, wrong credentials!');
+  }
+});
 
 // CRUD operations
 
@@ -99,7 +224,11 @@ const updateQuote = (quoteId, content) => {
 
 app.get('/quotes', (req, res) => {
   const quoteList = Object.values(movieQuotesDb);
-  const templateVars = { quotesArr: quoteList };
+
+  // get the user id from the cookies
+  const userId = req.cookies['user_id'];
+
+  const templateVars = { quotesArr: quoteList, user: usersDb[userId] };
 
   res.render('quotes', templateVars);
 
