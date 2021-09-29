@@ -1,6 +1,5 @@
 const express = require('express');
 const morgan = require('morgan');
-const bodyParser = require('body-parser');
 const uuid = require('uuid/v4');
 
 const PORT = process.env.PORT || 3000;
@@ -44,15 +43,7 @@ const movieQuotesDb = {
   },
 };
 
-const quoteComments = {
-  '70fcf8bd': {
-    id: '70fcf8bd',
-    comment: 'So awesome comment!',
-    quoteId: 'd9424e04',
-  },
-};
-
-const users = {
+const usersDb = {
   eb849b1f: {
     id: 'eb849b1f',
     name: 'Kent Cook',
@@ -67,7 +58,7 @@ const users = {
   },
 };
 
-const createNewQuote = content => {
+const createNewQuote = (content) => {
   const quoteId = uuid().substr(0, 8);
 
   // creating the new quote object
@@ -84,12 +75,15 @@ const createNewQuote = content => {
 };
 
 const updateQuote = (quoteId, content) => {
-
   // updating the quote key in the quote object
   movieQuotesDb[quoteId].quote = content;
 
   return true;
 };
+
+app.get('/', (req, res) => {
+  res.redirect('/quotes');
+});
 
 // CRUD operations
 
