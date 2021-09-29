@@ -12,12 +12,6 @@
   - Middleware
   - Template Engine(ejs)
 
-## Web App Request/Response Recap
-
-We draw this diagram to explain how requests and responses work.
-
-- [Web App Overview](./web_app_overview.png)
-
 ## Resources
 
 Resources for our movie quotes App
