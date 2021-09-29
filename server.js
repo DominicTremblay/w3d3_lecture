@@ -1,6 +1,5 @@
 const express = require('express');
 const morgan = require('morgan');
-const bodyParser = require('body-parser');
 const uuid = require('uuid/v4');
 
 const PORT = process.env.PORT || 3000;
@@ -42,17 +41,30 @@ const movieQuotesDb = {
     id: '4ad11feb',
     quote: 'Speak Friend and Enter',
   },
-};
-
-const quoteComments = {
-  '70fcf8bd': {
-    id: '70fcf8bd',
-    comment: 'So awesome comment!',
-    quoteId: 'd9424e04',
+  '67b3a931': {
+    id: '67b3a931',
+    quote: 'I love the smell of napalm in the morning.',
+  },
+  a2d1c8f0: {
+    id: 'a2d1c8f0',
+    quote:
+      "Life moves pretty fast. If you don't stop and look around once in a while, you could miss it.",
+  },
+  f01b6989: {
+    id: 'f01b6989',
+    quote: 'Here’s Johnny!',
+  },
+  '8a246b17': {
+    id: '8a246b17',
+    quote: 'I’m king of the world!',
+  },
+  '2c42a78d': {
+    id: '2c42a78d',
+    quote: 'To infinity and beyond!',
   },
 };
 
-const users = {
+const usersDb = {
   eb849b1f: {
     id: 'eb849b1f',
     name: 'Kent Cook',
@@ -65,9 +77,27 @@ const users = {
     email: 'good.philamignon@steak.com',
     password: 'meatlover',
   },
+  '4fe3d19b': {
+    id: '4fe3d19b',
+    name: 'Oliver Green',
+    email: 'oliver.green@gmail.com',
+    password: 'broccolilover',
+  },
+  '56b14d8a': {
+    id: '56b14d8a',
+    name: 'Bella Pepperoni',
+    email: 'bella.pepperoni@pizzahut.com',
+    password: 'pizzaislife',
+  },
+  ce5a937d: {
+    id: 'ce5a937d',
+    name: 'Charlie Tuna',
+    email: 'charlie.tuna@starkist.com',
+    password: 'fishlover',
+  },
 };
 
-const createNewQuote = content => {
+const createNewQuote = (content) => {
   const quoteId = uuid().substr(0, 8);
 
   // creating the new quote object
@@ -84,12 +114,15 @@ const createNewQuote = content => {
 };
 
 const updateQuote = (quoteId, content) => {
-
   // updating the quote key in the quote object
   movieQuotesDb[quoteId].quote = content;
 
   return true;
 };
+
+app.get('/', (req, res) => {
+  res.redirect('/quotes');
+});
 
 // CRUD operations
 
