@@ -1,6 +1,7 @@
 const express = require('express');
 const morgan = require('morgan');
 const uuid = require('uuid/v4');
+const cookieParser = require('cookie-parser');
 
 const PORT = process.env.PORT || 3000;
 
@@ -9,6 +10,7 @@ const app = express();
 
 // morgan middleware allows to log the request in the terminal
 app.use(morgan('short'));
+app.use(cookieParser());
 
 // parse application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: false }));
@@ -120,11 +122,114 @@ const updateQuote = (quoteId, content) => {
   return true;
 };
 
+const findUserByEmail = (email, usersDb) => {
+  // Check if user exists? => look for that email
+  for (let userId in usersDb) {
+    if (usersDb[userId].email === email) {
+      return usersDb[userId];
+    }
+  }
+
+  return false;
+};
+
 app.get('/', (req, res) => {
   res.redirect('/quotes');
 });
+// helper route to display the users
+app.get('/users.json', (req, res) => {
+  res.json(usersDb);
+});
 
-// CRUD operations
+// Authentication Routes (End-Points)
+
+// REGISTER
+
+// get register
+app.get('/register', (req, res) => {
+  // display the register form
+  res.render('register', { user: null });
+});
+
+// post register
+
+app.post('/register', (req, res) => {
+  // extract the user information from the request (form)
+
+  // destructuring
+  const { name, email, password } = req.body;
+
+  // const name = req.body.name;
+  // const email = req.body.email;
+  // const password = req.body.password;
+
+  // validation
+  // Check if user exists? => look for that email
+  for (let userId in usersDb) {
+    if (usersDb[userId].email === email) {
+      // user exist
+      res.status(403).send('User already exist');
+      return;
+    }
+  }
+
+  // create a new user
+  // add name, email, password into the usersDb
+  // generate a user id => random string
+  const userId = Math.random().toString(36).substring(2, 8);
+
+  // adding the user to the usersDb
+  usersDb[userId] = {
+    id: userId,
+    name,
+    email,
+    password,
+  };
+
+  // set the cookie
+  res.cookie('user_id', userId);
+
+  // redirect to /quotes
+
+  res.redirect('/quotes');
+});
+
+// LOGIN
+
+app.get('/login', (req, res) => {
+  const templateVars = { user: null };
+  res.render('login', templateVars);
+});
+
+app.post('/login', (req, res) => {
+  // extract the email and password
+  const { email, password } = req.body;
+
+  // validation if the user exists
+
+  const user = findUserByEmail(email, usersDb);
+
+  // check the passwords
+  if (user && user.password === password) {
+    // set the cookie
+    res.cookie('user_id', user.id);
+
+    res.redirect('/quotes');
+  } else {
+    // otherwise, send back 401
+    res.status(401).send('Bad credentials');
+  }
+});
+
+// LOGOUT
+
+app.post('/logout', (req, res) => {
+  res.clearCookie('user_id');
+
+  res.redirect('/quotes');
+});
+
+// CRUD operations -------------
 
 // List all the quotes
 // READ
@@ -132,7 +237,14 @@ app.get('/', (req, res) => {
 
 app.get('/quotes', (req, res) => {
   const quoteList = Object.values(movieQuotesDb);
-  const templateVars = { quotesArr: quoteList };
+
+  // is there a logged in user?
+  // retrieve the cookie
+  const userId = req.cookies['user_id'];
+  const currentUser = usersDb[userId];
+
+  console.log({ currentUser });
+  const templateVars = { quotesArr: quoteList, user: currentUser };
 
   res.render('quotes', templateVars);
 
